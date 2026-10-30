@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Créateur de personnage D&D 5e</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@600;700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dnd-theme")||"foret"}catch(e){document.documentElement.dataset.theme="foret"}</script>
+<body>
+<div class="wrap">
+  <nav class="tabs">
+    <a href="#persos" id="tabPersos" class="on">🛡️ Personnages</a>
+    <a href="#pnj" id="tabPnj">🐺 Ennemis & alliés</a>
+    <a href="#combat">⚔️ Combat</a>
+    <a href="#carte">🗺️ Carte</a>
+    <a href="#journal">📜 Journal</a>
+    <a href="#groupe">👥 Groupe</a>
+    <a href="#outils">🎲 Outils du MJ</a>
+    <a href="#admin">⚙️ Admin</a>
+    <span id="dbBadge" class="tag dbbadge" hidden title="Les sauvegardes, les sorts et les modèles viennent de ta base MariaDB">🗄️ Base MariaDB connectée</span>
+    <button type="button" id="themeBtn" class="themebtn" title="Changer le thème du site">🏰 Thème château</button>
+  </nav>
+
+  <!-- ===== Page 1 : personnages joueurs ===== -->
+  <section id="viewPersos">
+    <header class="top">
+      <div>
+        <h1>Créateur de personnage</h1>
+        <div class="small">D&D 5e (règles 2014), niveaux 1 à 5, d'après le Vilain Guide. À la fin, tu as tout pour remplir ta feuille.</div>
+      </div>
+      <div class="hbtns">
+        <button class="btn" id="saveBtn">💾 Sauvegarder</button>
+        <button class="btn sec" id="loadBtn">📂 Mes persos</button>
+        <button class="btn sec" id="preBtn">⚡ Prébuilds</button>
+        <button class="btn sec" id="resetBtn">Nouveau perso</button>
+      </div>
+    </header>
+    <div id="savesBox"></div>
+    <div class="steps" id="steps"></div>
+    <div id="page"></div>
+    <div class="err" id="err"></div>
+    <div class="nav">
+      <button class="btn sec" id="prevBtn">◀ Précédent</button>
+      <button class="btn" id="nextBtn">Suivant ▶</button>
+    </div>
+  </section>
+
+  <!-- ===== Page 2 : ennemis et alliés (PNJ) ===== -->
+  <section id="viewPnj" hidden>
+    <header class="top">
+      <div>
+        <h1>Ennemis & alliés</h1>
+        <div class="small">Crée les monstres et PNJ de ta partie : profil de créature calculé automatiquement, à partir d'un modèle ou de zéro.</div>
+      </div>
+      <div class="hbtns">
+        <button class="btn" id="npcSaveBtn">💾 Sauvegarder</button>
+        <button class="btn sec" id="npcLoadBtn">📂 Mes créatures</button>
+        <button class="btn sec" id="npcNewBtn">Nouvelle créature</button>
+      </div>
+    </header>
+    <div id="npcSavesBox"></div>
+    <div id="npcPage"></div>
+  </section>
+
+  <!-- ===== Page 3 : combat ===== -->
+  <section id="viewCombat" hidden>
+    <header class="top"><div><h1>Combat</h1><div class="small">Initiative, tours, points de vie et états de tout le monde au même endroit.</div></div></header>
+    <div id="combatPage"></div>
+    <div id="rencPage"></div>
+  </section>
+
+  <!-- ===== Page 3 bis : carte ===== -->
+  <section id="viewAdmin" hidden>
+    <header class="top"><div><h1>Administration</h1><div class="small">État de la base, sauvegarde complète, ménage, sorts / objets / monstres maison et sécurité.</div></div></header>
+    <div id="adminPage"></div>
+  </section>
+
+  <section id="viewJoueur" hidden><div id="joueurPage"></div></section>
+
+  <section id="viewCarte" hidden>
+    <div id="cartePage"></div>
+  </section>
+
+  <!-- ===== Journal de campagne ===== -->
+  <section id="viewJournal" hidden>
+    <header class="top"><div><h1>Journal de campagne</h1><div class="small">Sessions, quêtes, PNJ et butin : tout ce qui s'est passé, pour le « précédemment… » en début de partie.</div></div></header>
+    <div id="journalPage"></div>
+  </section>
+
+  <!-- ===== Page 4 : groupe ===== -->
+  <section id="viewGroupe" hidden>
+    <header class="top"><div><h1>Le groupe</h1><div class="small">Les persos de toute la table, partagés en direct.</div></div></header>
+    <div id="groupePage"></div>
+  </section>
+
+  <!-- ===== Page 5 : outils ===== -->
+  <section id="viewOutils" hidden>
+    <header class="top"><div><h1>Outils du MJ</h1><div class="small">Ambiance sonore, dés, rencontres équilibrées, PNJ improvisés, butin et écran du MJ.</div></div></header>
+    <div id="outilsPage"></div>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script src="storage.js"></script>
+<script src="script.js"></script>
+<script src="levels.js"></script>
+<script src="sorts2.js"></script>
+<script src="levels2.js"></script>
+<script src="sorts3.js"></script>
+<script src="play.js"></script>
+<script src="objets.js"></script>
+<script src="levelup.js"></script>
+<script src="pdf.js"></script>
+<script src="pnj.js"></script>
+<script src="combat.js"></script>
+<script src="groupe.js"></script>
+<script src="outils.js"></script>
+<script src="carte.js"></script>
+<script src="journal.js"></script>
+<script src="sons.js"></script>
+<script src="joueur.js"></script>
+<script src="prep.js"></script>
+<script src="admin.js"></script>
+<script src="bdd.js"></script>
+<script>render();routeView();</script>
+</body>
+</html>

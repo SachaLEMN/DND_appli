@@ -1,0 +1,5 @@
+Mets ici tes fichiers audio (mp3, ogg, wav, m4a).
+Chaque sous-dossier devient une catégorie dans Outils du MJ > Ambiance sonore :
+  sons/taverne/feu_de_cheminee.mp3   -> catégorie « Taverne »
+  sons/combat/tambours_de_guerre.mp3 -> catégorie « Combat »
+Les sons des catégories ambiance, musique, taverne, forêt, pluie et combat tournent en boucle par défaut.
