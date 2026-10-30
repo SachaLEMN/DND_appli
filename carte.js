@@ -115,7 +115,7 @@ function tokenPanel(){const t=M_.tokens.find(z=>z.id===sel);if(!t)return `<div c
    <label class="f" style="max-width:80px"><span>Couleur</span><input type="color" data-tk="color" value="${t.color||"#555555"}" style="height:38px;padding:2px"></label></div>
    ${ce?`<div class="small">Lié au combat : ${ce.hp} / ${ce.max} PV (modifie les PV dans l'onglet Combat).</div>`:`<div class="row"><label class="f"><span>PV</span><input type="number" data-tk="hp" value="${t.hp??""}"></label><label class="f"><span>PV max</span><input type="number" data-tk="max" value="${t.max??""}"></label></div>`}
    <label class="chk" style="margin:6px 0"><label class="${t.hidden?"sel":""}"><input type="checkbox" data-tk="hidden" ${t.hidden?"checked":""}> Caché aux joueurs</label><label class="${t.pj?"sel":""}"><input type="checkbox" data-tk="pj" ${t.pj?"checked":""}> Personnage joueur</label></label>${t.pj?`<div class="small">📱 ${t.pid?"Lié à sa fiche : le joueur peut le déplacer depuis son téléphone.":"Pas lié à une fiche : le téléphone le reconnaît s'il porte exactement le nom du perso."}</div>`:""}
-   <div class="row"><label class="f"><span>💡 Lumière (m)</span><input type="number" min="0" step="1.5" data-tk="light" value="${t.light||""}" placeholder="torche 6"></label><label class="f"><span>👁️ Vision noir (m)</span><input type="number" min="0" step="1.5" data-tk="dv" value="${t.dv||""}" placeholder="0"></label></div>
+   <div class="row"><label class="f"><span>💡 Lumière vive (m)</span><input type="number" min="0" step="1.5" data-tk="light" value="${t.light||""}" placeholder="torche 6" title="Rayon de lumière vive ; la lumière faible va deux fois plus loin (torche : 6 m vive + 6 m faible)"></label><label class="f"><span>👁️ Vision noir (m)</span><input type="number" min="0" step="1.5" data-tk="dv" value="${t.dv||""}" placeholder="0"></label></div>
    <div class="npcbox" style="margin:6px 0;padding:8px"><div class="small"><b>🚪 Porte / passage</b> : ce jeton mène vers une autre carte</div>
      ${mapIndex===null?`<button class="mini" data-m="loadIndex">Choisir la carte de destination…</button>`:`<select data-tk="link"><option value="">— aucune —</option>${mapIndex.filter(m=>m.id!==M_.saveId).map(m=>`<option value="${esc(m.id)}" ${t.link===m.id?"selected":""}>${esc(m.name)}</option>`).join("")}</select>`}
      ${t.link?`<div class="chk" style="margin-top:6px"><label class="${t.carry!==false?"sel":""}"><input type="checkbox" data-tk="carry" ${t.carry!==false?"checked":""}> Emmener les PJ</label><button class="btn sm" data-m="goLink">Passer la porte ➜</button></div>`:""}</div>
@@ -203,25 +203,39 @@ function inPoly(x,y,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){co
 // qui voit quoi : PJ (avec leur portée) + sources de lumière
 function sight(){const v=VIS();if(!v.on)return null;const S=segs();
   const ex=t=>t.vx??t.x,ey=t=>t.vy??t.y;   // pendant un glisser, on voit depuis la case de départ
-  const eyes=M_.tokens.filter(t=>t.pj&&!t.hidden).map(t=>({x:ex(t),y:ey(t),r:m2px(Math.max(t.light||0,t.dv||0)),poly:losPoly(ex(t),ey(t),S)}));
-  const lights=v.dark?M_.tokens.filter(t=>(t.light||0)>0).map(t=>({x:ex(t),y:ey(t),r:m2px(t.light),poly:losPoly(ex(t),ey(t),S)})):[];
+  // sur le téléphone d'un joueur : seulement ce que voit SON perso (la télé, elle, montre tout le groupe)
+  let pjs=M_.tokens.filter(t=>t.pj&&!t.hidden);if(ME&&pjs.some(mine))pjs=pjs.filter(mine);
+  const eyes=pjs.map(t=>({x:ex(t),y:ey(t),dv:m2px(t.dv||0),poly:losPoly(ex(t),ey(t),S)}));
+  // lumière : rayon = lumière vive, puis autant de lumière faible (torche 6 m = 6 m vive + 6 m faible)
+  const lights=v.dark?M_.tokens.filter(t=>(t.light||0)>0&&!(t.hidden&&!t.pj)).map(t=>({x:ex(t),y:ey(t),r:m2px(t.light),poly:losPoly(ex(t),ey(t),S)})):[];
   return {dark:!!v.dark,eyes,lights}}
-function visible(sg,x,y){if(!sg)return true;return sg.eyes.some(e=>inPoly(x,y,e.poly)&&(!sg.dark||Math.hypot(x-e.x,y-e.y)<=e.r||sg.lights.some(l=>Math.hypot(x-l.x,y-l.y)<=l.r&&inPoly(x,y,l.poly))))}
+const litAt=(sg,x,y)=>sg.lights.some(l=>Math.hypot(x-l.x,y-l.y)<=2*l.r&&inPoly(x,y,l.poly));
+function visible(sg,x,y){if(!sg)return true;return sg.eyes.some(e=>inPoly(x,y,e.poly)&&(!sg.dark||Math.hypot(x-e.x,y-e.y)<=e.dv||litAt(sg,x,y)))}
 function updateExplored(){const sg=sight();if(!sg)return;const g=G(),set=new Set(M_.explored||[]);const n0=set.size;
   const c1=Math.ceil((M_.w-g.ox)/g.size),r1=Math.ceil((M_.h-g.oy)/g.size);
   for(let c=Math.floor(-g.ox/g.size);c<=c1;c++)for(let r=Math.floor(-g.oy/g.size);r<=r1;r++){const k=c+","+r;if(set.has(k))continue;if(visible(sg,g.ox+(c+.5)*g.size,g.oy+(r+.5)*g.size))set.add(k)}
   if(set.size!==n0)M_.explored=[...set]}
-let maskC=null;
-function drawVision(x,sg){if(!sg)return;const k=Math.min(1,2200/Math.max(M_.w,M_.h));maskC=maskC||document.createElement("canvas");
-  const W=Math.ceil(M_.w*k),H=Math.ceil(M_.h*k);if(maskC.width!==W||maskC.height!==H){maskC.width=W;maskC.height=H}
+let maskC=null,grayC=null;
+function drawVision(x,sg){if(!sg)return;const k=Math.min(1,2200/Math.max(M_.w,M_.h));maskC=maskC||document.createElement("canvas");grayC=grayC||document.createElement("canvas");
+  const W=Math.ceil(M_.w*k),H=Math.ceil(M_.h*k);[maskC,grayC].forEach(c=>{if(c.width!==W||c.height!==H){c.width=W;c.height=H}});
+  const g=G(),path=(c,P)=>{c.beginPath();P.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath()};
+  // dégradé circulaire : opaque jusqu'à « plein », puis s'efface jusqu'à « r » (avec un palier « mid » pour la lumière faible)
+  const disc=(c,cx,cy,r,full,mid)=>{if(r<=0)return;const gr=c.createRadialGradient(cx,cy,0,cx,cy,r);gr.addColorStop(0,"rgba(0,0,0,1)");gr.addColorStop(Math.min(.99,full/r),"rgba(0,0,0,1)");
+    if(mid)gr.addColorStop(Math.min(.995,(full+(r-full)*.6)/r),`rgba(0,0,0,${mid})`);gr.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=gr;c.beginPath();c.arc(cx,cy,r,0,7);c.fill()};
+  const lit=(c,e,mid)=>sg.lights.forEach(l=>{c.save();path(c,l.poly);c.clip();disc(c,l.x,l.y,2*l.r,l.r,mid);c.restore()});
+  // 1) le noir : rien, zones déjà vues (sombres), vision dans le noir (pénombre), lumière (vive puis faible)
   const m=maskC.getContext("2d");m.setTransform(1,0,0,1,0,0);m.globalCompositeOperation="source-over";m.clearRect(0,0,W,H);m.fillStyle="#07060a";m.fillRect(0,0,W,H);
-  m.setTransform(k,0,0,k,0,0);m.globalCompositeOperation="destination-out";const g=G();
-  m.fillStyle="rgba(0,0,0,.42)";(M_.explored||[]).forEach(s=>{const [c,r]=s.split(",").map(Number);m.fillRect(g.ox+c*g.size,g.oy+r*g.size,g.size+.5,g.size+.5)});
-  const glow=(cx,cy,r)=>{if(r<=0)return;const gr=m.createRadialGradient(cx,cy,r*0.55,cx,cy,r);gr.addColorStop(0,"rgba(0,0,0,1)");gr.addColorStop(1,"rgba(0,0,0,0)");m.fillStyle=gr;m.beginPath();m.arc(cx,cy,r,0,7);m.fill()};
-  sg.eyes.forEach(e=>{if(!e.poly.length)return;m.save();m.beginPath();e.poly.forEach((p,i)=>i?m.lineTo(p[0],p[1]):m.moveTo(p[0],p[1]));m.closePath();m.clip();
+  m.setTransform(k,0,0,k,0,0);m.globalCompositeOperation="destination-out";
+  m.fillStyle="rgba(0,0,0,.42)";(M_.explored||[]).forEach(q=>{const [c,r]=q.split(",").map(Number);m.fillRect(g.ox+c*g.size,g.oy+r*g.size,g.size+.5,g.size+.5)});
+  sg.eyes.forEach(e=>{if(!e.poly.length)return;m.save();path(m,e.poly);m.clip();
     if(!sg.dark){m.fillStyle="#000";m.fillRect(0,0,M_.w,M_.h)}
-    else{glow(e.x,e.y,e.r);sg.lights.forEach(l=>{m.save();m.beginPath();l.poly.forEach((p,i)=>i?m.lineTo(p[0],p[1]):m.moveTo(p[0],p[1]));m.closePath();m.clip();glow(l.x,l.y,l.r);m.restore()})}
+    else{if(e.dv>0){m.globalAlpha=.68;disc(m,e.x,e.y,e.dv,e.dv*.85);m.globalAlpha=1}lit(m,e,.72)}
     m.restore()});
+  // 2) la vision dans le noir voit en noir et blanc : on désature ce qui n'est vu QUE grâce à elle (vue joueurs)
+  if(sg.dark&&player&&sg.eyes.some(e=>e.dv>0)){const q=grayC.getContext("2d");q.setTransform(1,0,0,1,0,0);q.globalCompositeOperation="source-over";q.clearRect(0,0,W,H);q.setTransform(k,0,0,k,0,0);
+    sg.eyes.forEach(e=>{if(!e.poly.length||e.dv<=0)return;q.save();path(q,e.poly);q.clip();q.fillStyle="#808080";q.beginPath();q.arc(e.x,e.y,e.dv,0,7);q.fill();q.restore()});
+    q.globalCompositeOperation="destination-out";sg.eyes.forEach(e=>{if(!e.poly.length)return;q.save();path(q,e.poly);q.clip();lit(q,e,0);q.restore()});
+    x.save();x.globalCompositeOperation="saturation";x.drawImage(grayC,0,0,M_.w,M_.h);x.restore()}
   x.save();x.globalAlpha=player?1:0.45;x.drawImage(maskC,0,0,M_.w,M_.h);x.restore()}
 function drawWalls(x){if(player||!(M_.walls||[]).length&&!wallDraft)return;x.save();x.lineCap="round";
   (M_.walls||[]).concat(wallDraft?[wallDraft]:[]).forEach(w=>{x.lineWidth=(w.door?7:5)/V.s;x.strokeStyle=w.door?(w.open?"rgba(90,200,110,.9)":"#e0892f"):"rgba(80,160,255,.9)";
@@ -234,6 +248,7 @@ function visionCard(){const v=VIS();const nw=M_.walls.length;
   return `<div class="card"><h3>Vision et lumière</h3>
    <div class="chk"><label class="${v.on?"sel":""}"><input type="checkbox" id="visOn" ${v.on?"checked":""}> Lignes de vue (les murs bloquent la vue)</label>
    <label class="${v.dark?"sel":""}"><input type="checkbox" id="visDark" ${v.dark?"checked":""}> Obscurité (on ne voit qu'avec lumière / vision dans le noir)</label></div>
+   ${v.dark?`<div class="small" style="margin-bottom:4px">💡 Lumière (torche…) = en couleur, vive puis faible jusqu'au double du rayon. 👁️ Vision dans le noir = en gris et plus sombre. Sur la télé on voit ce que voit tout le groupe ; sur le téléphone, chacun ne voit que ce que voit son perso.</div>`:""}
    <div class="small">Outils 🧱 Mur et 🚪 Porte : glisse d'un coin de case à l'autre (Maj = sans aimant). En mode ✋, clique une porte pour l'ouvrir ou la fermer. ${nw} segment${nw>1?"s":""}.</div>
    <div class="cbtns" style="justify-content:flex-start;margin-top:6px">${nw?`<button class="mini" data-m="wallUndo">↶ Dernier mur</button><button class="mini" data-m="wallClear">Effacer les murs</button>`:""}${(M_.explored||[]).length?`<button class="mini" data-m="exploReset">Oublier les zones explorées</button>`:""}</div></div>`}
 
